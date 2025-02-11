@@ -17,9 +17,9 @@ This project is a data analysis and visualization project focused on air quality
 
 ## Structure of Project
 * `data/`: Directory containing the raw CSV data files.
-* `notebook.py`: Python scripts for data wrangling, EDA, and answering analysis questions.
-* `app.py`: The Streamlit dashboard application.
-* `README.md`: This documentation file.
+* `Air_Quality_Analytics_Project.ipynb`: Python scripts for Data Wrangling, EDA, Insight analysis and Visualization Data.
+* `dashboard_air_quality.py`: The Streamlit dashboard application.
+* `README.md`: The documentation file.
 
 ## Installation 
 1. Clone the repository
@@ -36,7 +36,7 @@ streamlit run app.py
 ```
 
 ## Usage
-1. Data Wrangling: scripts are available in the dashboard_air_quality.py file to prepare and clean the data.
+1. Data Wrangling: scripts are available in the dashboard_air_quality.py file to prepare, gather and clean the data.
 2. Exploratory Data Analysis (EDA): Explore and analyze the data using the provided Python scripts. EDA insights can guide your understanding of air quality patterns.
 3. Visualization: Run the Streamlit dashboard for interactive data exploration:
 ```bash
