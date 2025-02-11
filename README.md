@@ -1,6 +1,6 @@
 # Air Quality Beijing Data Analysis - Dicoding
 
-![Dashboard Preview](path/to/dashboard-preview.png)
+![Dashboard Preview](dashboard_aq.gif)
 
 ## Air Quality Dashboard Streamlit App
 ## Table of Contents
