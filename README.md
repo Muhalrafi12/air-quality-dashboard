@@ -2,7 +2,6 @@
 
 ![Dashboard Preview](dashboard_aq.gif)
 
-## Air Quality Dashboard Streamlit App
 ## Table of Contents
 * [Overview](#overview)
 * [Structure of Project](#structure-of-project)
