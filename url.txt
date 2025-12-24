@@ -1,1 +1,1 @@
-https://project-beijing-air-quality-muhalrafi12.streamlit.app/
+https://beijing-air-quality-analytics.streamlit.app/
