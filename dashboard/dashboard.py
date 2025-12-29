@@ -1,8 +1,5 @@
 import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
 import streamlit as st
-import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 import os
@@ -10,10 +7,7 @@ import os
 # Set page config
 st.set_page_config(page_title="Beijing Air Quality Dashboard", page_icon="🌍", layout="wide")
 
-# Set style seaborn
-sns.set(style='dark')
-
-# Fungsi Load Data
+# ==================== FUNGSI & KONSTANTA ====================
 @st.cache_data
 def load_data():
     current_dir = os.path.dirname(__file__)
@@ -24,37 +18,21 @@ def load_data():
     data['date'] = data['datetime'].dt.date
     data['Hour'] = data['datetime'].dt.hour
     data['year'] = data['datetime'].dt.year
-    data['month_year'] = data['datetime'].dt.strftime('%b %Y')
+    data['month'] = data['datetime'].dt.month
+    data['month_year'] = data['datetime'].dt.strftime('%Y-%m')
     return data
 
-# Color mapping following IQAir standards
-color_map = {
-    'Good': '#00e400',
-    'Moderate': '#ffff00',
-    'Unhealthy for Sensitive Groups': '#ff7e00',
-    'Unhealthy': '#ff0000',
-    'Very Unhealthy': '#8f3f97',
-    'Hazardous': '#7e0023'
-}
+# Fungsi AQI
+all_pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
 
-# Health recommendations by category
-health_recommendations = {
-    'Good': 'Air quality is satisfactory, and air pollution poses little or no risk.',
-    'Moderate': 'Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.',
-    'Unhealthy for Sensitive Groups': 'Members of sensitive groups may experience health effects. The general public is less likely to be affected.',
-    'Unhealthy': 'Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.',
-    'Very Unhealthy': 'Health alert: The risk of health effects is increased for everyone.',
-    'Hazardous': 'Health warning of emergency conditions: everyone is more likely to be affected.'
-}
-
-# Load data
-data = load_data()
-
-# Calculate AQI and add categories
 def calculate_aqi(row):
-    pollutants = ['PM2.5', 'PM10', 'SO2', 'NO2', 'CO', 'O3']
-    valid_values = [row[p] for p in pollutants if p in row and pd.notna(row[p])]
-    return sum(valid_values) / len(valid_values) if valid_values else 0
+    valid_values = []
+    for pollutant in all_pollutants:
+        if pollutant in row and pd.notna(row[pollutant]):
+            valid_values.append(row[pollutant])
+    if not valid_values:
+        return None
+    return sum(valid_values) / len(valid_values)
 
 def categorize_air_quality(aqi):
     if aqi <= 50: return 'Good'
@@ -64,8 +42,32 @@ def categorize_air_quality(aqi):
     elif aqi <= 300: return 'Very Unhealthy'
     else: return 'Hazardous'
 
+# Color mapping
+colors = {
+    'Good': '#00e400',
+    'Moderate': '#ffff00',
+    'Unhealthy for Sensitive Groups': '#ff7e00',
+    'Unhealthy': '#ff0000',
+    'Very Unhealthy': '#8f3f97',
+    'Hazardous': '#7e0023'
+}
+
+# Health recommendations
+health_recommendations = {
+    'Good': 'Air quality is satisfactory, and air pollution poses little or no risk.',
+    'Moderate': 'Air quality is acceptable. However, there may be a risk for some people, particularly those who are unusually sensitive to air pollution.',
+    'Unhealthy for Sensitive Groups': 'Members of sensitive groups may experience health effects. The general public is less likely to be affected.',
+    'Unhealthy': 'Some members of the general public may experience health effects; members of sensitive groups may experience more serious health effects.',
+    'Very Unhealthy': 'Health alert: The risk of health effects is increased for everyone.',
+    'Hazardous': 'Health warning of emergency conditions: everyone is more likely to be affected.'
+}
+
+# ==================== LOAD DATA ====================
+data = load_data()
+
+# Calculate AQI
 data['aqi'] = data.apply(calculate_aqi, axis=1)
-data['Category'] = data['aqi'].apply(categorize_air_quality)
+data['category'] = data['aqi'].apply(categorize_air_quality)
 
 # ==================== HEADER ====================
 st.title('🌍 Beijing Air Quality Dashboard')
@@ -86,7 +88,7 @@ with st.sidebar:
     
     # AQI Category filter
     selected_categories = st.selectbox('Select AQI Categories',
-                                     ['Overall Category'] + list(color_map.keys()),
+                                     ['Overall Category'] + list(colors.keys()),
                                      key='aqi_category')
     
     # Hour filter
@@ -94,7 +96,7 @@ with st.sidebar:
                                list(range(24)),
                                format_func=lambda x: f"{x:02d}:00")
     
-    # Date range with fixed dates
+    # Date range
     st.subheader('📅 Date Range')
     min_date = datetime(2013, 3, 1).date()
     max_date = datetime(2017, 2, 28).date()
@@ -109,7 +111,7 @@ with st.sidebar:
                             min_value=min_date,
                             max_value=max_date)
 
-# Filter data based on all selections
+# Filter data
 filtered_data = data[
     (data['date'] >= start_date) & 
     (data['date'] <= end_date) &
@@ -120,20 +122,20 @@ if selected_station != 'All Stations':
     filtered_data = filtered_data[filtered_data['station'] == selected_station]
 
 if selected_categories != 'Overall Category':
-    filtered_data = filtered_data[filtered_data['Category'] == selected_categories]
+    filtered_data = filtered_data[filtered_data['category'] == selected_categories]
 
 # ==================== CURRENT STATUS ====================
 st.header('📊 Current Air Quality Status')
 if not filtered_data.empty:
     latest_data = filtered_data.iloc[-1]
     latest_aqi = latest_data['aqi']
-    latest_category = latest_data['Category']
+    latest_category = latest_data['category']
 
     cols = st.columns(3)
     with cols[0]:
         st.metric('Average AQI', f"{latest_aqi:.1f}")
     with cols[1]:
-        st.markdown(f"**Category:** <span style='color:{color_map[latest_category]}'>{latest_category}</span>", 
+        st.markdown(f"**Category:** <span style='color:{colors[latest_category]}'>{latest_category}</span>", 
                    unsafe_allow_html=True)
     with cols[2]:
         st.markdown(f"**Station:** {selected_station}")
@@ -146,14 +148,13 @@ st.markdown('---')
 
 # ==================== POLLUTANT TRENDS ====================
 st.markdown("<h2 style='text-align: center;'>📈 Pollutant Trends Over Time</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Peak levels of SO2, NO2, CO, and O3 across the observation period</p>", unsafe_allow_html=True)
 
 if not filtered_data.empty:
-    pollutants_trend = ['SO2', 'NO2', 'CO', 'O3']
+    pollutants_to_analyze = ['SO2', 'NO2', 'CO', 'O3']
     
     fig = go.Figure()
     
-    for pollutant in pollutants_trend:
+    for pollutant in pollutants_to_analyze:
         monthly_data = filtered_data.groupby('month_year')[pollutant].mean().reset_index()
         
         fig.add_trace(go.Scatter(
@@ -167,7 +168,7 @@ if not filtered_data.empty:
     
     fig.update_layout(
         title='Trend Polutan SO2, NO2, CO, dan O3 per Periode Waktu',
-        xaxis_title='Time Period (Month-Year)',
+        xaxis_title='Periode (Bulan-Tahun)',
         yaxis_title='Concentration (μg/m³)',
         height=500,
         hovermode='x unified',
@@ -182,27 +183,23 @@ if not filtered_data.empty:
     
     st.plotly_chart(fig, use_container_width=True)
     
-    # Peak values summary
+    # Peak values
     st.subheader('🔝 Peak Values Summary')
     peak_cols = st.columns(4)
-    for idx, pollutant in enumerate(pollutants_trend):
+    for idx, pollutant in enumerate(pollutants_to_analyze):
         with peak_cols[idx]:
             max_idx = filtered_data[pollutant].idxmax()
             max_value = filtered_data.loc[max_idx, pollutant]
-            max_date = filtered_data.loc[max_idx, 'datetime'].strftime('%b %Y')
+            max_date = filtered_data.loc[max_idx, 'datetime'].strftime('%Y-%m')
             st.metric(f"{pollutant} Peak", f"{max_value:.2f}", delta=max_date)
 
 st.markdown('---')
 
-# ==================== PM2.5 vs PM10 COMPARISON ====================
+# ==================== PM2.5 vs PM10 ====================
 st.markdown("<h2 style='text-align: center;'>📉 PM2.5 vs PM10 Annual Comparison</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Yearly average comparison of particulate matter levels (2013-2017)</p>", unsafe_allow_html=True)
 
 if not filtered_data.empty:
-    yearly_avg = filtered_data.groupby('year').agg({
-        'PM2.5': 'mean',
-        'PM10': 'mean'
-    }).reset_index()
+    yearly_avg = filtered_data.groupby('year')[['PM2.5', 'PM10']].mean().reset_index()
     
     fig_pm = go.Figure()
     
@@ -232,8 +229,8 @@ if not filtered_data.empty:
     
     fig_pm.update_layout(
         title='Perbandingan Rata-rata Tahunan PM2.5 dan PM10 (2013-2017)',
-        xaxis_title='Year',
-        yaxis_title='Concentration (µg/m³)',
+        xaxis_title='Tahun',
+        yaxis_title='Konsentrasi (µg/m³)',
         height=500,
         hovermode='x unified',
         legend=dict(
@@ -242,6 +239,10 @@ if not filtered_data.empty:
             y=1.02,
             xanchor="right",
             x=1
+        ),
+        xaxis=dict(
+            dtick=1,
+            tickmode='linear'
         )
     )
     
@@ -250,85 +251,91 @@ if not filtered_data.empty:
     # Comparison table
     st.subheader('📋 Yearly Comparison Table')
     yearly_avg['Difference'] = yearly_avg['PM10'] - yearly_avg['PM2.5']
-    yearly_avg['PM2.5'] = yearly_avg['PM2.5'].round(2)
-    yearly_avg['PM10'] = yearly_avg['PM10'].round(2)
-    yearly_avg['Difference'] = yearly_avg['Difference'].round(2)
+    yearly_avg = yearly_avg.round(2)
     st.dataframe(yearly_avg, use_container_width=True)
 
 st.markdown('---')
 
 # ==================== AIR QUALITY DISTRIBUTION ====================
 st.markdown("<h2 style='text-align: center;'>🥧 Air Quality Distribution</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Overall air quality category breakdown (2013-2017)</p>", unsafe_allow_html=True)
 
 if not filtered_data.empty:
-    category_dist = filtered_data['Category'].value_counts()
-    category_percentages = (category_dist / len(filtered_data) * 100).round(1)
+    category_counts = filtered_data['category'].value_counts()
+    category_percentages = (category_counts / len(filtered_data) * 100).round(1)
     
     fig_dist = go.Figure(data=[go.Pie(
-        labels=category_dist.index,
-        values=category_dist.values,
+        labels=category_counts.index,
+        values=category_counts.values,
         hole=0.3,
-        marker=dict(colors=[color_map[cat] for cat in category_dist.index]),
+        marker=dict(
+            colors=[colors[cat] for cat in category_counts.index],
+            line=dict(color='white', width=2)
+        ),
         textinfo='label+percent',
         textfont=dict(size=12),
+        textposition='auto',
+        insidetextorientation='radial',
         hovertemplate='<b>%{label}</b><br>Count: %{value}<br>Percentage: %{percent}<extra></extra>'
     )])
     
     fig_dist.update_layout(
-        height=500,
+        title='Air Quality Level in 2013–2017',
+        height=600,
         showlegend=True,
         legend=dict(
             orientation="v",
             yanchor="middle",
             y=0.5,
             xanchor="left",
-            x=1.02
+            x=1.05
         )
     )
     
     st.plotly_chart(fig_dist, use_container_width=True)
     
-    # Category statistics
+    # Category statistics table
     st.subheader('📊 Category Statistics')
-    stats_cols = st.columns(len(category_dist))
-    for idx, (cat, count) in enumerate(category_dist.items()):
-        with stats_cols[idx]:
-            pct = category_percentages[cat]
-            st.markdown(f"<div style='background-color:{color_map[cat]}; padding:10px; border-radius:5px; text-align:center;'>"
-                       f"<h4 style='color:white; margin:0;'>{cat}</h4>"
-                       f"<p style='color:white; margin:0;'>{count} ({pct}%)</p></div>", 
-                       unsafe_allow_html=True)
+    stats_df = pd.DataFrame({
+        'Category': category_counts.index,
+        'Count': category_counts.values,
+        'Percentage': category_percentages.values
+    })
+    st.dataframe(stats_df, use_container_width=True)
 
 st.markdown('---')
 
 # ==================== DISTRICT COMPARISON ====================
 st.markdown("<h2 style='text-align: center;'>🏙️ Air Quality by District</h2>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: gray;'>Comparative analysis of air quality levels across Beijing districts</p>", unsafe_allow_html=True)
 
 if not filtered_data.empty:
+   
     district_quality = pd.crosstab(
         filtered_data['station'],
-        filtered_data['Category'],
+        filtered_data['category'],
         normalize='index'
     ) * 100
     
-    ordered_categories = [cat for cat in color_map.keys() if cat in district_quality.columns]
-    district_quality = district_quality[ordered_categories]
+    # Urutan kategori
+    category_order = ['Good', 'Moderate', 'Unhealthy for Sensitive Groups', 'Unhealthy', 'Very Unhealthy', 'Hazardous']
+    district_quality = district_quality.reindex(columns=category_order, fill_value=0)
+    
+   
+    district_quality = district_quality.sort_values(by='Hazardous', ascending=False)
     
     fig_district = go.Figure()
     
-    for category in ordered_categories:
-        fig_district.add_trace(go.Bar(
-            name=category,
-            x=district_quality.index,
-            y=district_quality[category],
-            marker_color=color_map[category],
-            hovertemplate='<b>%{x}</b><br>' + category + ': %{y:.1f}%<extra></extra>'
-        ))
+    for category in category_order:
+        if category in district_quality.columns:
+            fig_district.add_trace(go.Bar(
+                name=category,
+                x=district_quality.index,
+                y=district_quality[category],
+                marker_color=colors[category],
+                hovertemplate='<b>%{x}</b><br>' + category + ': %{y:.1f}%<extra></extra>'
+            ))
     
     fig_district.update_layout(
-        title='Air Quality Distribution by District (2013-2017)',
+        title='Air Quality Level by District (2013-2017)',
         xaxis_title='District',
         yaxis_title='Percentage (%)',
         barmode='stack',
@@ -347,7 +354,7 @@ if not filtered_data.empty:
     
     st.plotly_chart(fig_district, use_container_width=True)
     
-    # Best and worst districts
+    # Best and worst districts - URUTAN BENAR
     st.markdown("<h3 style='text-align: center;'>🏆 Best and Worst Districts</h3>", unsafe_allow_html=True)
     
     district_aqi = filtered_data.groupby('station')['aqi'].mean().sort_values()
@@ -356,18 +363,19 @@ if not filtered_data.empty:
     
     with col1:
         st.success('**🌟 Healthiest Districts (Lowest AQI)**')
-        for i, (district, aqi) in enumerate(district_aqi.head(3).items(), 1):
+        best_districts = district_aqi.head(3)
+        for i, (district, aqi) in enumerate(best_districts.items(), 1):
             st.write(f"{i}. **{district}**: {aqi:.2f}")
     
     with col2:
         st.error('**⚠️ Most Polluted Districts (Highest AQI)**')
-        for i, (district, aqi) in enumerate(district_aqi.tail(3).iloc[::-1].items(), 1):
+        worst_districts = district_aqi.tail(3).iloc[::-1]  
+        for i, (district, aqi) in enumerate(worst_districts.items(), 1):
             st.write(f"{i}. **{district}**: {aqi:.2f}")
 
 st.markdown('---')
 
 # ==================== FOOTER ====================
-st.markdown('---')
 st.markdown("""
 <div style='text-align: center; color: gray; padding: 20px;'>
     <p style='font-size: 14px;'>📊 <strong>Beijing Air Quality Dashboard</strong> | Data Period: March 2013 - February 2017</p>
