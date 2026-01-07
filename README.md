@@ -46,6 +46,59 @@ air-quality-dashboard/
 ---
 
 ## 👤 Identitas Pemilik
-Muhammad Ridwan Alrafi
+
 * **Nama**: Muhammad Ridwan Alrafi
-* **Email**: [Muhammad.alrafi@mhs.un](mailto:Muhammad.alrafi@mhs.un)
+* **Email**: [Muhammad.alrafi@mhs.unsoed.ac.id](mailto:Muhammad.alrafi@mhs.unsoed.ac.id)
+* **Dicoding Username**: muhammad_rid
+
+---
+
+## ⚙️ Setup Environment
+
+### Menggunakan Anaconda
+
+```
+conda create --name air-quality-ds python=3.10
+conda activate air-quality-ds
+pip install -r requirements.txt
+```
+
+### Menggunakan Shell / Terminal
+
+```
+mkdir proyek_air_quality
+cd proyek_air_quality
+pipenv install
+pipenv shell
+pip install -r requirements.txt
+```
+
+---
+
+## ▶️ Run Streamlit App
+
+```
+streamlit run dashboard.py
+```
+
+Aplikasi akan berjalan secara lokal dan dapat diakses melalui browser.
+
+---
+
+## 🛠️ Tech Stack
+
+* Python
+* Pandas & NumPy
+* Matplotlib & Seaborn
+* Streamlit
+* Jupyter Notebook
+
+---
+
+## 📌 Notes
+
+Project ini ditujukan untuk kebutuhan **pembelajaran, evaluasi, dan portfolio**. Dataset yang digunakan berasal dari sumber pembelajaran Dicoding.
+
+---
+
+✨ *Feel free to explore the project and give feedback!*
